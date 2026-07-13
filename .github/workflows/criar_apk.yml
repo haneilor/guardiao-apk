@@ -1,0 +1,36 @@
+name: Criar APK Guardiao
+
+on:
+  workflow_dispatch: # Permite que você clique em um botão para iniciar a compilação
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar descompactador
+        run: sudo apt-get install -y unzip
+
+      - name: Descompactar o projeto ZIP
+        run: |
+          unzip -o guardiao_projeto.zip -d .
+          # Garante que o buildozer.spec aceite as licenças
+          sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec || true
+          sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec || true
+
+      - name: Compilar APK com Buildozer
+        uses: ArtemGovorov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          repository_root: .
+
+      - name: Salvar o APK pronto
+        uses: actions/upload-artifact@v4
+        with:
+          name: aplicativo-guardiao
+          path: ${{ steps.buildozer.outputs.filename }}
+          
