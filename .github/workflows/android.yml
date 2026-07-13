@@ -1,0 +1,93 @@
+name: Compilar APK Guardiao IA
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Baixar Código do Repositório
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Configurar Java JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Instalar Dependências do Sistema
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          ffmpeg \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev \
+          zlib1g-dev \
+          libgfortran5 \
+          libopenblas-dev \
+          liblapack-dev \
+          gfortran \
+          unzip \
+          zip
+
+    - name: Instalar Buildozer e Cython
+      run: |
+        pip install --upgrade pip
+        pip install "cython<3.0.0" buildozer virtualenv
+
+    - name: Limpeza Absoluta de Cache
+      run: |
+        rm -rf .buildozer/
+        rm -rf ~/.buildozer/
+        buildozer android clean || true
+
+    - name: Configurar o SDK Oficial do Android para o Buildozer
+      run: |
+        # 1. Criar o diretório correto onde o Buildozer espera o Android SDK
+        ANDROID_SDK_HOME="/home/runner/.buildozer/android/platform/android-sdk"
+        mkdir -p "$ANDROID_SDK_HOME/cmdline-tools"
+        
+        # 2. Baixar a versão oficial e estável do cmdline-tools do Google diretamente para lá
+        # Isso resolve permanentemente o erro de "sdkmanager not found"
+        curl -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip -q commandlinetools.zip -d "$ANDROID_SDK_HOME/cmdline-tools"
+        mv "$ANDROID_SDK_HOME/cmdline-tools/cmdline-tools" "$ANDROID_SDK_HOME/cmdline-tools/latest"
+        rm commandlinetools.zip
+
+        # 3. Criar o link simbólico legado que o Buildozer ainda procura internamente
+        mkdir -p "$ANDROID_SDK_HOME/tools/bin"
+        ln -sf "$ANDROID_SDK_HOME/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_SDK_HOME/tools/bin/sdkmanager"
+
+        # 4. Aceitar as licenças usando o SDK isolado que acabamos de criar
+        yes | "$ANDROID_SDK_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_HOME" --licenses || true
+
+        # 5. Instalar o build-tools (com o aidl) e as plataformas necessárias diretamente nele
+        # O buildozer detectará que estes arquivos já existem e não tentará reinstalar/apagar nada
+        "$ANDROID_SDK_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_HOME" "build-tools;34.0.0" "platforms;android-34" "platform-tools"
+
+    - name: Compilar APK com Buildozer
+      run: |
+        # Executa a compilação garantindo que o Buildozer leia o SDK local preparado por nós
+        buildozer android debug
+      env:
+        BUILDOZER_WARN_ON_ROOT: 0
+        
