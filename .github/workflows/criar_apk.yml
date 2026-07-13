@@ -1,7 +1,7 @@
 name: Criar APK Guardiao
 
 on:
-  workflow_dispatch: # Permite que você clique em um botão para iniciar a compilação
+  workflow_dispatch: # Permite iniciar clicando no botão
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
           sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec || true
 
       - name: Compilar APK com Buildozer
-        uses: ArtemGovorov/buildozer-action@v1
+        uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
           command: buildozer android debug
@@ -33,4 +33,3 @@ jobs:
         with:
           name: aplicativo-guardiao
           path: ${{ steps.buildozer.outputs.filename }}
-          
