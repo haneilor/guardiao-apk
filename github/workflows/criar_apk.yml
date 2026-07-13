@@ -1,0 +1,48 @@
+name: Criar APK Guardiao
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Dependências do Sistema e Java
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libdb-dev libsqlite3-dev libffi-dev uuid-dev libgdbm-compat-dev
+          sudo apt-get install -y ccache clang
+          
+      - name: Instalar Buildozer e Cython
+        run: |
+          pip install --upgrade pip
+          pip install "cython<3.0.0" buildozer
+
+      - name: Configurar Licenças do Android
+        run: |
+          if [ -f buildozer.spec ]; then
+            sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec || true
+            sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec || true
+          fi
+
+      - name: Compilar APK com Buildozer
+        run: |
+          # Sem o comando clean para não quebrar em diretórios inexistentes
+          buildozer android debug
+
+      - name: Salvar o APK pronto
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aplicativo-guardiao
+          path: bin/*.apk
+          
