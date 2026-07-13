@@ -1,0 +1,96 @@
+name: Compilar APK Guardiao IA
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Baixar Código do Repositório
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Configurar Java JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Instalar Dependências do Sistema
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          ffmpeg \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev \
+          zlib1g-dev \
+          libgfortran5 \
+          libopenblas-dev \
+          liblapack-dev \
+          gfortran
+
+    - name: Instalar Buildozer e Cython
+      run: |
+        pip install --upgrade pip
+        pip install "cython<3.0.0" buildozer virtualenv
+
+    - name: Limpeza Absoluta de Cache de Compilação
+      run: |
+        rm -rf .buildozer/
+        rm -rf ~/.buildozer/
+        buildozer android clean || true
+
+    - name: Pré-instalar e Vincular SDK do Android (Garante o AIDL)
+      run: |
+        # 1. Configura repositório de licenças
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+
+        # 2. Aceita todas as licenças do SDK global
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+        # 3. Garante que as ferramentas build-tools (com o aidl) estejam instaladas no runner
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-34" "platform-tools"
+
+        # 4. Pré-cria a árvore de diretórios onde o Buildozer tentará procurar as ferramentas
+        BUILDOZER_TARGET_SDK="/home/runner/.buildozer/android/platform/android-sdk"
+        mkdir -p "$BUILDOZER_TARGET_SDK"
+
+        # 5. Cria links simbólicos (pontes virtuais) para o SDK do Runner
+        # Isso faz o Buildozer enxergar instantaneamente o 'build-tools' e 'platform-tools' já instalados!
+        ln -sf "$ANDROID_HOME/build-tools" "$BUILDOZER_TARGET_SDK/build-tools"
+        ln -sf "$ANDROID_HOME/platform-tools" "$BUILDOZER_TARGET_SDK/platform-tools"
+        ln -sf "$ANDROID_HOME/platforms" "$BUILDOZER_TARGET_SDK/platforms"
+
+    - name: Compilar APK com Buildozer
+      run: |
+        # O Buildozer agora iniciará a compilação e encontrará o AIDL mapeado imediatamente
+        buildozer android debug
+      env:
+        BUILDOZER_WARN_ON_ROOT: 0
+
+    - name: Fazer Upload do APK Compilado
+      uses: actions/upload-artifact@v4
+      with:
+        name: Guardiao-IA-APK
+        path: bin/*.apk
+        retention-days: 7
+        
