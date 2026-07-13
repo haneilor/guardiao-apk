@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Guardião IA - Inteligência Preditiva</title>
+    <style>
+        :root {
+            --bg-color: #0d0f12;
+            --card-bg: #161a22;
+            --accent-orange: #ff9f1c;
+            --accent-green: #2ecc71;
+            --accent-red: #e74c3c;
+            --accent-blue: #3498db;
+            --text-main: #f0f3f5;
+            --text-muted: #8b9bb4;
+            --border-color: #252d3a;
+        }
+        body { font-family: sans-serif; background: var(--bg-color); color: var(--text-main); max-width: 520px; margin: 0 auto; padding: 15px; }
+        h1 { font-size: 24px; text-align: center; margin-bottom: 20px; color: var(--accent-orange); }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 14px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+        h2 { font-size: 16px; margin-top: 0; color: var(--text-muted); text-transform: uppercase; }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; background: rgba(46, 204, 113, 0.15); color: var(--accent-green); }
+        .status-badge.parado { background: rgba(255, 159, 28, 0.15); color: var(--accent-orange); }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; font-size: 14px; }
+        .btn-green { background: var(--accent-green); color: #fff; }
+        .btn-red { background: #3a1f22; color: var(--accent-red); border: 1px solid rgba(231, 76, 60, 0.3); }
+        .btn-orange { background: var(--accent-orange); color: #000; grid-column: span 2; }
+        .btn-blue { background: transparent; color: var(--accent-blue); border: 1px solid var(--accent-blue); width: 100%; margin-top: 10px; }
+        ul { list-style: none; padding: 0; }
+        li { background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .btn-delete { color: var(--accent-red); text-decoration: none; font-size: 14px; padding: 5px 10px; background: rgba(231, 76, 60, 0.1); border-radius: 4px; }
+        input[type="text"] { width: 100%; padding: 12px; background: #1c212c; border: 1px solid var(--border-color); color: white; border-radius: 8px; margin-bottom: 10px; }
+        .ai-metrics { display: flex; justify-content: space-between; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 13px; }
+        .metric-box { text-align: center; flex: 1; }
+        .metric-box span { display: block; font-weight: bold; font-size: 16px; color: var(--accent-blue); }
+    </style>
+    <script>
+        function acao(url) {
+            fetch(url, {method: 'POST'})
+            .then(r => r.json())
+            .then(d => { alert(d.mensagem); location.reload(); });
+        }
+    </script>
+</head>
+<body>
+    <h1>🛡️ GUARDIÃO INTELLIGENCE</h1>
+    
+    <div class="card">
+        <h2>Núcleo de Monitoramento Cognitivo</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <p style="margin:0 0 5px 0;">Estado do Sistema:</p>
+                <span class="status-badge {% if not ativo %}parado{% endif %}">{% if ativo %}🟢 Inteligência Ativa{% else %}⏸️ Monitoramento Parado{% endif %}</span>
+            </div>
+        </div>
+        
+        <div class="ai-metrics">
+            <div class="metric-box">
+                <span>{{ progresso }}</span>
+                Fase Estudo 7D
+            </div>
+            <div class="metric-box" style="border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color);">
+                <span>Anomalia</span>
+                Isolation Forest
+            </div>
+            <div class="metric-box">
+                <span>Físico</span>
+                SMS via Chip
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-green" onclick="acao('/iniciar')">ATIVAR</button>
+            <button class="btn btn-red" onclick="acao('/parar')">DESLIGAR</button>
+            <button class="btn btn-orange" onclick="acao('/panico')">🆘 BOTÃO DE PÂNICO IMEDIATO</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Contatos de Emergência (SMS Direto)</h2>
+        <ul>
+        {% for c in contatos %}
+            <li>
+                <div><strong>{{ c[1] }}</strong><br><small>{{ c[2] }}</small></div>
+                <a href="/excluir-contato/{{ c[0] }}" class="btn-delete">Remover</a>
+            </li>
+        {% else %}
+            <p style="color: var(--text-muted); font-size: 14px;">Nenhum contato blindado.</p>
+        {% endfor %}
+        </ul>
+        <form action="/salvar-contato" method="POST" style="margin-top: 15px;">
+            <input type="text" name="nome" placeholder="Nome do Contato Alvo" required>
+            <input type="text" name="telefone" placeholder="Telefone (DDD + Número)" required>
+            <button type="submit" class="btn btn-blue">+ Proteger Novo Contato</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Zonas Seguras Estáticas (Geofencing)</h2>
+        <ul>
+        {% for l in locais %}
+            <li>
+                <div><strong>{{ l[1] }}</strong><br><small>Lat: {{ "%.4f"|format(l[3]) }}, Lon: {{ "%.4f"|format(l[4]) }}</small></div>
+                <a href="/excluir-local/{{ l[0] }}" class="btn-delete">Remover</a>
+            </li>
+        {% else %}
+            <p style="color: var(--text-muted); font-size: 14px;">Nenhuma zona segura delimitada.</p>
+        {% endfor %}
+        </ul>
+        <div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <a href="/salvar-local/Casa" class="btn btn-blue" style="text-decoration:none; background:#1c212c; text-align:center; padding:12px 0; border-radius:8px;">📍 Marcar Casa</a>
+            <a href="/salvar-local/Trabalho" class="btn btn-blue" style="text-decoration:none; background:#1c212c; text-align:center; padding:12px 0; border-radius:8px;">📍 Marcar Trabalho</a>
+        </div>
+    </div>
+</body>
+</html>
